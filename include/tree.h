@@ -1,93 +1,92 @@
-#ifndef INCLUDE_PERMTREE_H_
-#define INCLUDE_PERMTREE_H_
+// Copyright 2022 NNTU-CS
+#ifndef THREE_H_
+#define THREE_H_
 
 #include <vector>
 #include <algorithm>
 
-struct Node {
-  char symbol;
-  std::vector<Node*> branches;
+struct Leaf {
+  char data;
+  std::vector<Leaf*> paths;
 
-  explicit Node(char s) : symbol(s) {}
+  explicit Leaf(char d) : data(d) {}
 };
 
-class PermTree {
+class TreeForm {
  private:
-  Node* base;
+  Leaf* origin;
 
-  std::vector<char> exclude(const std::vector<char>& source, char ch) {
-    std::vector<char> output;
-    for (char c : source)
+  std::vector<char> removeChar(const std::vector<char>& list, char ch) {
+    std::vector<char> result;
+    for (char c : list)
       if (c != ch)
-        output.push_back(c);
-    return output;
-  }
-
-  void expand(Node* current, const std::vector<char>& rest) {
-    for (char ch : rest) {
-      Node* child = new Node(ch);
-      current->branches.push_back(child);
-      expand(child, exclude(rest, ch));
-    }
-  }
-
-  void cleanup(Node* current) {
-    if (!current) return;
-    for (auto* b : current->branches) {
-      cleanup(b);
-      delete b;
-    }
-  }
-
-  void gather(Node* current, std::vector<char>& temp, std::vector<std::vector<char>>& storage) const {
-    temp.push_back(current->symbol);
-
-    if (current->branches.empty()) {
-      storage.push_back(temp);
-    } else {
-      for (auto* b : current->branches) {
-        gather(b, temp, storage);
-      }
-    }
-
-    temp.pop_back();
-  }
-
- public:
-  explicit PermTree(const std::vector<char>& input) {
-    base = new Node('*');
-    if (input.empty()) return;
-
-    std::vector<char> sorted = input;
-    std::sort(sorted.begin(), sorted.end());
-
-    for (char ch : sorted) {
-      Node* child = new Node(ch);
-      base->branches.push_back(child);
-      expand(child, exclude(sorted, ch));
-    }
-  }
-
-  ~PermTree() {
-    cleanup(base);
-    delete base;
-  }
-
-  std::vector<std::vector<char>> allPermutations() const {
-    std::vector<std::vector<char>> result;
-    std::vector<char> path;
-    for (auto* child : base->branches) {
-      gather(child, path, result);
-    }
+        result.push_back(c);
     return result;
   }
 
-  Node* getBase() const { return base; }
+  void grow(Leaf* current, const std::vector<char>& leftover) {
+    for (char ch : leftover) {
+      Leaf* next = new Leaf(ch);
+      current->paths.push_back(next);
+      grow(next, removeChar(leftover, ch));
+    }
+  }
+
+  void purge(Leaf* current) {
+    if (!current) return;
+    for (auto* branch : current->paths) {
+      purge(branch);
+      delete branch;
+    }
+  }
+
+  void collect(Leaf* current, std::vector<char>& trace, std::vector<std::vector<char>>& results) const {
+    trace.push_back(current->data);
+    if (current->paths.empty()) {
+      results.push_back(trace);
+    } else {
+      for (auto* sub : current->paths) {
+        collect(sub, trace, results);
+      }
+    }
+    trace.pop_back();
+  }
+
+ public:
+  explicit TreeForm(const std::vector<char>& elements) {
+    origin = new Leaf('*');
+    if (elements.empty()) return;
+
+    std::vector<char> sorted = elements;
+    std::sort(sorted.begin(), sorted.end());
+
+    for (char ch : sorted) {
+      Leaf* next = new Leaf(ch);
+      origin->paths.push_back(next);
+      grow(next, removeChar(sorted, ch));
+    }
+  }
+
+  ~TreeForm() {
+    purge(origin);
+    delete origin;
+  }
+
+  std::vector<std::vector<char>> getAll() const {
+    std::vector<std::vector<char>> output;
+    std::vector<char> buffer;
+    for (auto* branch : origin->paths) {
+      collect(branch, buffer, output);
+    }
+    return output;
+  }
+
+  Leaf* root() const { return origin; }
 };
 
-std::vector<std::vector<char>> generatePerms(const PermTree& tree);
-std::vector<char> getByIndexFull(const PermTree& tree, int index);
-std::vector<char> getByIndexTree(const PermTree& tree, int index);
-bool findPathByIndex(Node* node, std::vector<char>& path, int goal, int& counter);
+std::vector<std::vector<char>> bruteGenerate(const TreeForm& t);
+std::vector<char> indexedBrute(const TreeForm& t, int idx);
+std::vector<char> indexedSmart(const TreeForm& t, int idx);
+bool followIndex(Leaf* node, std::vector<char>& track, int desired, int& counter);
 
-#endif  // INCLUDE_PERMTREE_H_
+#endif  // THREE_H_
