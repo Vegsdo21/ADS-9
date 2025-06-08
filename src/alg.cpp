@@ -1,51 +1,46 @@
 // Copyright 2022 NNTU-CS
 #include "tree.h"
+#include <vector>
 
-std::vector<std::vector<char>> bruteGenerate(const TreeForm& t) {
-  return t.getAll();
+std::vector<std::vector<char>> bruteGenerate(const PMTree& tree) {
+    return tree.getAllPermutations();
 }
 
-std::vector<char> indexedBrute(const TreeForm& t, int idx) {
-  if (idx <= 0) return {};
-  auto perms = t.getAll();
-  if (idx > static_cast<int>(perms.size()))
-    return {};
-  return perms[idx - 1];
+std::vector<char> indexedBrute(const PMTree& tree, int num) {
+    std::vector<std::vector<char>> perms = tree.getAllPermutations();
+    if (num < 0 || num >= (int)perms.size()) {
+        return {};
+    }
+    return perms[num];
 }
 
-bool followIndex(Leaf* node, std::vector<char>& track, int desired, int& counter) {
-  track.push_back(node->data);
+bool findNthPath(NodePM* node, std::vector<char>& path, int desired, int& current) {
+    path.push_back(node->value);
 
-  if (node->paths.empty()) {
-    if (counter == desired) {
-      return true;
+    if (node->children.empty()) {
+        if (current == desired) {
+            return true;
+        }
+        ++current;
     } else {
-      ++counter;
-      track.pop_back();
-      return false;
+        for (NodePM* child : node->children) {
+            if (findNthPath(child, path, desired, current)) {
+                return true;
+            }
+        }
     }
-  }
 
-  for (auto* next : node->paths) {
-    if (followIndex(next, track, desired, counter))
-      return true;
-  }
-
-  track.pop_back();
-  return false;
+    path.pop_back();
+    return false;
 }
 
-std::vector<char> indexedSmart(const TreeForm& t, int idx) {
-  if (idx <= 0) return {};
-  int counter = 1;
-  std::vector<char> route;
-  Leaf* start = t.root();
-
-  for (auto* child : start->paths) {
-    if (followIndex(child, route, idx, counter)) {
-      return route;
+std::vector<char> indexedSmart(const PMTree& tree, int num) {
+    std::vector<char> result;
+    int current = 0;
+    for (NodePM* child : tree.getRoot()->children) {
+        if (findNthPath(child, result, num, current)) {
+            return result;
+        }
     }
-  }
-
-  return {};
+    return {};
 }
