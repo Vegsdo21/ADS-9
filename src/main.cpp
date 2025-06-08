@@ -1,8 +1,12 @@
 // Copyright 2022 NNTU-CS
+#include "tree.h"
 #include <iostream>
 #include <vector>
 #include <chrono>
-#include "tree.h"
+
+std::vector<std::vector<char>> bruteGenerate(const TreeForm& tree);
+std::vector<char> indexedBrute(const TreeForm& tree, int idx);
+std::vector<char> indexedSmart(const TreeForm& tree, int idx);
 
 void printPermutation(const std::vector<char>& perm) {
     for (char c : perm)
@@ -12,7 +16,7 @@ void printPermutation(const std::vector<char>& perm) {
 
 int main() {
     std::vector<char> elements = {'A', 'B', 'C'};
-    PMTree tree(elements);
+    TreeForm tree(elements);
 
     for (const auto& perm : tree.getAllPermutations())
         printPermutation(perm);
@@ -24,7 +28,7 @@ int main() {
         printPermutation(indexedSmart(tree, i));
 
     std::vector<char> biggerSet = {'1', '2', '3', '4', '5'};
-    PMTree bigTree(biggerSet);
+    TreeForm bigTree(biggerSet);
 
     auto start = std::chrono::high_resolution_clock::now();
     auto allPerms = bigTree.getAllPermutations();
