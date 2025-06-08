@@ -1,5 +1,5 @@
 // Copyright 2022 NNTU-CS
-#include "three.h"
+#include "tree.h"
 
 std::vector<std::vector<char>> bruteGenerate(const TreeForm& t) {
   return t.getAll();
