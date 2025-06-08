@@ -1,92 +1,106 @@
-// Copyright 2022 NNTU-CS
-#ifndef THREE_H_
-#define THREE_H_
+// Copyright 2025 YourName
+#ifndef INCLUDE_TREE_H_
+#define INCLUDE_TREE_H_
 
-#include <vector>
 #include <algorithm>
+#include <iostream>
+#include <vector>
 
-struct Leaf {
-  char data;
-  std::vector<Leaf*> paths;
+struct NodePM {
+  char value;
+  std::vector<NodePM*> children;
 
-  explicit Leaf(char d) : data(d) {}
+  explicit NodePM(char val) : value(val) {}
 };
 
-class TreeForm {
+class PMTree {
  private:
-  Leaf* origin;
+  NodePM* root_;
 
-  std::vector<char> removeChar(const std::vector<char>& list, char ch) {
-    std::vector<char> result;
-    for (char c : list)
-      if (c != ch)
-        result.push_back(c);
-    return result;
-  }
-
-  void grow(Leaf* current, const std::vector<char>& leftover) {
-    for (char ch : leftover) {
-      Leaf* next = new Leaf(ch);
-      current->paths.push_back(next);
-      grow(next, removeChar(leftover, ch));
-    }
-  }
-
-  void purge(Leaf* current) {
-    if (!current) return;
-    for (auto* branch : current->paths) {
-      purge(branch);
-      delete branch;
-    }
-  }
-
-  void collect(Leaf* current, std::vector<char>& trace, std::vector<std::vector<char>>& results) const {
-    trace.push_back(current->data);
-    if (current->paths.empty()) {
-      results.push_back(trace);
-    } else {
-      for (auto* sub : current->paths) {
-        collect(sub, trace, results);
+  std::vector<char> removeChar(const std::vector<char>* list, char item) {
+    std::vector<char> res;
+    int n = list->size();
+    for (int i = 0; i < n; ++i) {
+      if ((*list)[i] != item) {
+        res.push_back((*list)[i]);
       }
     }
-    trace.pop_back();
+    return res;
+  }
+
+  void buildTree(NodePM* node, std::vector<char> remaining) {
+    int n = remaining.size();
+    for (int i = 0; i < n; ++i) {
+      char c = remaining[i];
+      NodePM* child = new NodePM(c);
+      node->children.push_back(child);
+      buildTree(child, removeChar(&remaining, c));
+    }
+  }
+
+  void clearTree(NodePM* node) {
+    if (!node) return;
+    int n = node->children.size();
+    for (int i = 0; i < n; ++i) {
+      clearTree(node->children[i]);
+      delete node->children[i];
+    }
+  }
+
+  void collectPaths(NodePM* node, std::vector<char>& path,
+                    std::vector<std::vector<char>>& result) const {
+    path.push_back(node->value);
+
+    if (node->children.empty()) {
+      result.push_back(path);
+    } else {
+      int n = node->children.size();
+      for (int i = 0; i < n; ++i) {
+        collectPaths(node->children[i], path, result);
+      }
+    }
+
+    path.pop_back();
   }
 
  public:
-  explicit TreeForm(const std::vector<char>& elements) {
-    origin = new Leaf('*');
-    if (elements.empty()) return;
+  explicit PMTree(const std::vector<char>& chars) : root_(new NodePM('*')) {
+    if (chars.empty()) return;
 
-    std::vector<char> sorted = elements;
+    std::vector<char> sorted = chars;
     std::sort(sorted.begin(), sorted.end());
 
-    for (char ch : sorted) {
-      Leaf* next = new Leaf(ch);
-      origin->paths.push_back(next);
-      grow(next, removeChar(sorted, ch));
+    int n = sorted.size();
+    for (int i = 0; i < n; ++i) {
+      NodePM* child = new NodePM(sorted[i]);
+      root_->children.push_back(child);
+      buildTree(child, removeChar(&sorted, sorted[i]));
     }
   }
 
-  ~TreeForm() {
-    purge(origin);
-    delete origin;
+  ~PMTree() {
+    clearTree(root_);
+    delete root_;
   }
 
-  std::vector<std::vector<char>> getAll() const {
-    std::vector<std::vector<char>> output;
-    std::vector<char> buffer;
-    for (auto* branch : origin->paths) {
-      collect(branch, buffer, output);
+  std::vector<std::vector<char>> getAllPermutations() const {
+    std::vector<std::vector<char>> result;
+    std::vector<char> path;
+
+    int n = root_->children.size();
+    for (int i = 0; i < n; ++i) {
+      collectPaths(root_->children[i], path, result);
     }
-    return output;
+
+    return result;
   }
 
-  Leaf* root() const { return origin; }
+  NodePM* getRoot() const { return root_; }
 };
 
-std::vector<std::vector<char>> bruteGenerate(const TreeForm& t);
-std::vector<char> indexedBrute(const TreeForm& t, int idx);
-std::vector<char> indexedSmart(const TreeForm& t, int idx);
-bool followIndex(Leaf* node, std::vector<char>& track, int desired, int& counter);
+std::vector<std::vector<char>> getAllPerms(const PMTree& tree);
+std::vector<char> getPerm1(const PMTree& tree, int num);
+std::vector<char> getPerm2(const PMTree& tree, int num);
+bool findNthPath(NodePM* node, std::vector<char>& path, int target, int& current);
 
-#endif  // THREE_H_
+#endif  // INCLUDE_TREE_H_
