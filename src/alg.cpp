@@ -1,3 +1,4 @@
+// Copyright 2022 NNTU-CS
 #include "three.h"
 
 std::vector<std::vector<char>> bruteGenerate(const TreeForm& t) {
